@@ -4,4 +4,4 @@
 /crypto_dash.egg-info
 *.egg-info
 dist
-
+*.parquet

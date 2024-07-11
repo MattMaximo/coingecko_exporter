@@ -119,13 +119,13 @@ class CoinGecko:
             results = await asyncio.gather(*tasks, return_exceptions=True)
             results = [result for result in results if result is not None]
             return pd.concat(results)
-
+        
     def export_data(self, coins: int, export_format: str = 'df'):
         """
         Main method to fetch and export CoinGecko data.
         
         :param coins: Number of top coins by market cap to fetch
-        :param export_format: Export format ('df', 'sqlite', or 'duckdb')
+        :param export_format: Export format ('df', 'sqlite', 'duckdb', or 'parquet')
         :return: DataFrame(s) if export_format is 'df', else None
         """
         coins_df = asyncio.run(self.get_coins(coins))
@@ -143,11 +143,14 @@ class CoinGecko:
             conn.execute("CREATE OR REPLACE TABLE coins AS SELECT * FROM coins_df")
             conn.execute("CREATE OR REPLACE TABLE historical_data AS SELECT * FROM historical_data_df")
             conn.close()
+        elif export_format == 'parquet':
+            coins_df.to_parquet("coins.parquet", index=False)
+            historical_data_df.to_parquet("historical_data.parquet", index=False)
         else:
-            raise ValueError("Invalid export format. Choose 'df', 'sqlite', or 'duckdb'.")
+            raise ValueError("Invalid export format. Choose 'df', 'sqlite', 'duckdb', or 'parquet'.")
 
 if __name__ == "__main__":
-    cg = CoinGecko(api_key="YOUR_API_KEY")
-    coins = 3000
-    data = cg.export_data(coins, export_format='df')
-    print(data)
+    import os
+    cg = CoinGecko(api_key="CG-api-key")
+    coins = 1000
+    data = cg.export_data(coins, export_format='parquet')

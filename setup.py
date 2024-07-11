@@ -7,10 +7,11 @@ setup(
     install_requires=[
         "httpx",
         "pandas",
-        "sqlite3",
         "duckdb",
         "aiolimiter",
-        "asyncio"
+        "httpx",
+        "pyarrow",
+        "fastparquet"
     ],
     author="Matt Maximo",
     author_email="matt@pioneerdigital.org",
