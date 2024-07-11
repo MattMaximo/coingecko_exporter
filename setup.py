@@ -1,13 +1,18 @@
-from setuptools import setup, find_packages
 
+from setuptools import setup, find_packages
 
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
-
 setup(
-    name="coingecko_exporter",
-    version="0.1.0",
+    name="coingecko_exporter",  
+    version="0.1.2",
+    description="A package to export bulk data from the CoinGecko API.",
+    long_description=long_description,
+    long_description_content_type="text/markdown",
+    author="Matt Maximo",
+    author_email="matt@pioneerdigital.org",
+    url="https://github.com/MattMaximo/artemis_py",
     packages=find_packages(),
     install_requires=[
         "httpx",
@@ -18,12 +23,6 @@ setup(
         "pyarrow",
         "fastparquet"
     ],
-    author="Matt Maximo",
-    author_email="matt@pioneerdigital.org",
-    description="A package to fetch and export large amounts of CoinGecko cryptocurrency data.",
-    long_description=open("README.md").read(),
-    long_description_content_type="text/markdown",
-    url="https://github.com/mattmaximo/coingecko_exporter",
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
