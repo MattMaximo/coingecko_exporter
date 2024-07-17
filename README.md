@@ -23,10 +23,10 @@ Below is an example of how to use the CoinGecko Exporter package:
 
 ```python
 import asyncio
-from coingecko_exporter import CoinGeckoExporter
+from coingecko_exporter import CoinGecko as cg 
 
 api_key = "YOUR_API_KEY"
-cg = CoinGeckoExporter(api_key=api_key)
+cg = CoinGecko(api_key=api_key)
 
 # Number of coins to fetch
 coins = 3000
@@ -39,6 +39,8 @@ cg.export_data(coins=coins, export_format='sqlite')
 
 # Export data to DuckDB
 cg.export_data(coins=coins, export_format='duckdb')
+
+cg.get_historical_data("ethereum")
 ```
 
 ## API Reference
@@ -57,6 +59,8 @@ Fetches and exports CoinGecko data.
 
 - `coins`: Number of coins to fetch.
 - `export_format`: Export format. Options are 'df', 'sqlite', or 'duckdb'. Default is 'df'.
+
+#### `get_historical_data(self, coingecko_id: str, type: str = 'df')`
 
 ## License
 
