@@ -5,6 +5,7 @@ import pandas as pd
 import sqlite3
 import duckdb
 from aiolimiter import AsyncLimiter
+import requests 
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -148,6 +149,32 @@ class CoinGecko:
             historical_data_df.to_parquet("historical_data.parquet", index=False)
         else:
             raise ValueError("Invalid export format. Choose 'df', 'sqlite', 'duckdb', or 'parquet'.")
+
+    def get_historical_data(self, coingecko_id: str, type: str = 'df') -> pd.DataFrame:
+        """
+        Fetches the historical data of a crypto asset. 
+        """
+        url = f"https://pro-api.coingecko.com/api/v3/coins/{coingecko_id}/market_chart"
+
+        params = {
+            "vs_currency": "usd",
+            "days": "max",
+            "interval": "daily",
+            "x_cg_pro_api_key": self.api_key
+        }
+        data = requests.get(url, params=params).json()
+
+        prices = pd.DataFrame(data['prices'], columns=['date', 'price'])
+        market_cap = pd.DataFrame(data['market_caps'], columns=['date', 'market_cap'])
+        volume = pd.DataFrame(data['total_volumes'], columns=['date', 'volume'])
+        merged_df = prices.merge(market_cap, on='date').merge(volume, on='date')
+        merged_df['date'] = pd.to_datetime(merged_df['date'], unit='ms').dt.normalize()
+
+        if type == 'df':
+            return merged_df
+        elif type == 'dict' or type == 'json':
+            return merged_df.to_dict(orient='records')
+        
 
 if __name__ == "__main__":
     import os
