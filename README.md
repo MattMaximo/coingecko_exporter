@@ -23,7 +23,7 @@ Below is an example of how to use the CoinGecko Exporter package:
 
 ```python
 import asyncio
-from coingecko_exporter import CoinGecko as cg 
+from coingecko_exporter import CoinGecko
 
 api_key = "YOUR_API_KEY"
 cg = CoinGecko(api_key=api_key)
