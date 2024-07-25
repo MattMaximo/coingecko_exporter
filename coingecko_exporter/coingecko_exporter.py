@@ -114,7 +114,10 @@ class CoinGecko:
         merged_df['coingecko_id'] = coingecko_id
         return merged_df
 
-    async def get_historical_data(self, coingecko_ids: list) -> pd.DataFrame:
+    async def _get_timeseries(self, coingecko_ids: list) -> pd.DataFrame:
+        """
+        to be used within export_data method
+        """
         async with httpx.AsyncClient() as client:
             tasks = [self.fetch_timeseries_data(client, coingecko_id) for coingecko_id in coingecko_ids]
             results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -130,7 +133,7 @@ class CoinGecko:
         :return: DataFrame(s) if export_format is 'df', else None
         """
         coins_df = asyncio.run(self.get_coins(coins))
-        historical_data_df = asyncio.run(self.get_historical_data(coins_df["coingecko_id"].tolist()))
+        historical_data_df = asyncio.run(self._get_timeseries(coins_df["coingecko_id"].tolist()))
 
         if export_format == 'df':
             return coins_df, historical_data_df
@@ -174,6 +177,23 @@ class CoinGecko:
             return merged_df
         elif type == 'dict' or type == 'json':
             return merged_df.to_dict(orient='records')
+        
+    def total_market_data(self):
+
+        url = "https://pro-api.coingecko.com/api/v3/global/market_cap_chart?days=max"
+        headers = {
+            "accept": "application/json",
+            "x-cg-pro-api-key": self.api_key
+        }
+
+        response = requests.get(url, headers=headers)
+        data = response.json()['market_cap_chart']
+
+        market_cap = pd.DataFrame(data['market_cap'], columns=['date', 'market_cap'])
+        volume = pd.DataFrame(data['volume'], columns=['date', 'volume'])
+        merged_df = volume.merge(market_cap, on='date')
+        merged_df['date'] = pd.to_datetime(merged_df['date'], unit='ms').dt.normalize()
+        return merged_df
         
 
 if __name__ == "__main__":

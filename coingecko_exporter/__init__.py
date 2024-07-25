@@ -1,2 +1,3 @@
-# coingecko_exporter/__init__.py allows for import like Import CoinGecko from coingecko_exporter
+# coingecko_exporter/__init__.py
+
 from .coingecko_exporter import CoinGecko
