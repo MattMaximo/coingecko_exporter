@@ -6,6 +6,7 @@ import sqlite3
 import duckdb
 from aiolimiter import AsyncLimiter
 import requests 
+from typing import Union, List, Dict
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -153,30 +154,47 @@ class CoinGecko:
         else:
             raise ValueError("Invalid export format. Choose 'df', 'sqlite', 'duckdb', or 'parquet'.")
 
-    def get_historical_data(self, coingecko_id: str, type: str = 'df') -> pd.DataFrame:
+    def get_historical_data(self, coingecko_id: str, days: Union[str, int] = 'max', interval: str = 'daily', type: str = 'df') -> Union[pd.DataFrame, List[Dict]]:
         """
-        Fetches the historical data of a crypto asset. 
+        Fetches the historical data of a crypto asset.
+        
+        :param coingecko_id: str, the CoinGecko ID of the cryptocurrency
+        :param days: Union[str, int], number of days of data to retrieve. Use 'max' for maximum available data or an integer for specific number of days.
+        :param interval: str, data interval. Only used when days='max'. Options are 'daily' or 'hourly'.
+        :param type: str, return type. Options are 'df' for DataFrame or 'dict'/'json' for dictionary/JSON format.
+        :return: Union[pd.DataFrame, List[Dict]], historical data in the specified format
         """
         url = f"https://pro-api.coingecko.com/api/v3/coins/{coingecko_id}/market_chart"
-
+        
         params = {
             "vs_currency": "usd",
-            "days": "max",
-            "interval": "daily",
+            "days": days,
             "x_cg_pro_api_key": self.api_key
         }
+        
+        # Only include interval if days is 'max'
+        if days == 'max':
+            params["interval"] = interval
+        
         data = requests.get(url, params=params).json()
-
+        
         prices = pd.DataFrame(data['prices'], columns=['date', 'price'])
         market_cap = pd.DataFrame(data['market_caps'], columns=['date', 'market_cap'])
         volume = pd.DataFrame(data['total_volumes'], columns=['date', 'volume'])
+        
         merged_df = prices.merge(market_cap, on='date').merge(volume, on='date')
-        merged_df['date'] = pd.to_datetime(merged_df['date'], unit='ms').dt.normalize()
-
+        merged_df['date'] = pd.to_datetime(merged_df['date'], unit='ms')
+        
+        # Only normalize date if interval is daily
+        if interval == 'daily':
+            merged_df['date'] = merged_df['date'].dt.normalize()
+        
         if type == 'df':
             return merged_df
-        elif type == 'dict' or type == 'json':
+        elif type in ['dict', 'json']:
             return merged_df.to_dict(orient='records')
+        else:
+            raise ValueError("Invalid type. Use 'df', 'dict', or 'json'.")
         
     def total_market_data(self):
 
