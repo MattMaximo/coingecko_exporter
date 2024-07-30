@@ -7,6 +7,7 @@ import duckdb
 from aiolimiter import AsyncLimiter
 import requests 
 from typing import Union, List, Dict
+from datetime import datetime
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -149,8 +150,9 @@ class CoinGecko:
             conn.execute("CREATE OR REPLACE TABLE historical_data AS SELECT * FROM historical_data_df")
             conn.close()
         elif export_format == 'parquet':
-            coins_df.to_parquet("coins.parquet", index=False)
-            historical_data_df.to_parquet("historical_data.parquet", index=False)
+            today = datetime.now().strftime("%Y-%m-%d")
+            coins_df.to_parquet(f"data/coins_{today}.parquet", index=False)
+            historical_data_df.to_parquet(f"data/historical_data_{today}.parquet", index=False)
         else:
             raise ValueError("Invalid export format. Choose 'df', 'sqlite', 'duckdb', or 'parquet'.")
 
