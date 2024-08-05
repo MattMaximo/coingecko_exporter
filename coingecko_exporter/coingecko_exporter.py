@@ -8,6 +8,10 @@ from aiolimiter import AsyncLimiter
 import requests 
 from typing import Union, List, Dict
 from datetime import datetime
+import pyarrow as pa
+import pyarrow.parquet as pq
+import boto3
+from io import BytesIO
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -131,7 +135,8 @@ class CoinGecko:
         Main method to fetch and export CoinGecko data.
         
         :param coins: Number of top coins by market cap to fetch
-        :param export_format: Export format ('df', 'sqlite', 'duckdb', or 'parquet')
+        :param export_format: Export format ('df', 's3', or 'parquet')
+        :param s3_payload: Dict with aws_access_key_id, aws_secret_access_key, bucket_name, and optional folder_name and file_name
         :return: DataFrame(s) if export_format is 'df', else None
         """
         coins_df = asyncio.run(self.get_coins(coins))
@@ -139,22 +144,12 @@ class CoinGecko:
 
         if export_format == 'df':
             return coins_df, historical_data_df
-        elif export_format == 'sqlite':
-            conn = sqlite3.connect("coingecko_data.sqlite")
-            coins_df.to_sql("coins", conn, if_exists="replace", index=False)
-            historical_data_df.to_sql("historical_data", conn, if_exists="replace", index=False)
-            conn.close()
-        elif export_format == 'duckdb':
-            conn = duckdb.connect("coingecko_data.duckdb")
-            conn.execute("CREATE OR REPLACE TABLE coins AS SELECT * FROM coins_df")
-            conn.execute("CREATE OR REPLACE TABLE historical_data AS SELECT * FROM historical_data_df")
-            conn.close()
         elif export_format == 'parquet':
             today = datetime.now().strftime("%Y-%m-%d")
             coins_df.to_parquet(f"data/coins_{today}.parquet", index=False)
             historical_data_df.to_parquet(f"data/historical_data_{today}.parquet", index=False)
         else:
-            raise ValueError("Invalid export format. Choose 'df', 'sqlite', 'duckdb', or 'parquet'.")
+            raise ValueError("Invalid export format. Choose 'df', or 'parquet'.")
 
     def get_historical_data(self, coingecko_id: str, days: Union[str, int] = 'max', interval: str = 'daily', type: str = 'df') -> Union[pd.DataFrame, List[Dict]]:
         """
@@ -215,9 +210,46 @@ class CoinGecko:
         merged_df['date'] = pd.to_datetime(merged_df['date'], unit='ms').dt.normalize()
         return merged_df
         
+    def upload_to_s3(
+        df,
+        aws_access_key_id,
+        aws_secret_access_key,
+        bucket_name,
+        folder_name=None,
+        file_name=None,
+    ):
+        # Convert DataFrame to parquet
+        table = pa.Table.from_pandas(df)
+        buffer = BytesIO()
+        pq.write_table(table, buffer)
+        buffer.seek(0)
+
+        # Set up S3 client
+        s3_client = boto3.client(
+            "s3",
+            aws_access_key_id=aws_access_key_id,
+            aws_secret_access_key=aws_secret_access_key,
+        )
+
+        # Construct S3 key
+        if folder_name:
+            s3_key = f"{folder_name}/"
+        else:
+            s3_key = ""
+
+        if file_name:
+            s3_key += file_name
+        else:
+            s3_key += "data.parquet"
+
+        # Upload to S3
+        s3_client.upload_fileobj(buffer, bucket_name, s3_key)
+        print(f"File uploaded successfully to {bucket_name}/{s3_key}")
+
 
 if __name__ == "__main__":
     import os
     cg = CoinGecko(api_key="CG-api-key")
     coins = 1000
-    data = cg.export_data(coins, export_format='parquet')
+    data = cg.export_data(coins, export_format='df')
+    data.upload_to_s3(aws_access_key_id="your-aws-access-key-id", aws_secret_access_key="your-aws-secret-access-key", bucket_name="your-s3-bucket-name")

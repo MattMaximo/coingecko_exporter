@@ -21,7 +21,9 @@ setup(
         "aiolimiter",
         "httpx",
         "pyarrow",
-        "fastparquet"
+        "fastparquet",
+        "boto3",
+        
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
