@@ -211,6 +211,7 @@ class CoinGecko:
         return merged_df
         
     def upload_to_s3(
+        self,
         df,
         aws_access_key_id,
         aws_secret_access_key,
