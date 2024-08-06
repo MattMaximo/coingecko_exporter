@@ -143,10 +143,9 @@ class CoinGecko:
         historical_data_df = asyncio.run(self._get_timeseries(coins_df["coingecko_id"].tolist()))
 
         if export_format == 'df':
-            return coins_df, historical_data_df
+            return historical_data_df
         elif export_format == 'parquet':
             today = datetime.now().strftime("%Y-%m-%d")
-            coins_df.to_parquet(f"data/coins_{today}.parquet", index=False)
             historical_data_df.to_parquet(f"data/historical_data_{today}.parquet", index=False)
         else:
             raise ValueError("Invalid export format. Choose 'df', or 'parquet'.")
