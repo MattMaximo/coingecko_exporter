@@ -130,7 +130,7 @@ class CoinGecko:
             results = [result for result in results if result is not None]
             return pd.concat(results)
         
-    def export_data(self, coins: int, export_format: str = 'df'):
+    def export_data(self, coins, export_format: str = 'df'):
         """
         Main method to fetch and export CoinGecko data.
         
@@ -139,8 +139,15 @@ class CoinGecko:
         :param s3_payload: Dict with aws_access_key_id, aws_secret_access_key, bucket_name, and optional folder_name and file_name
         :return: DataFrame(s) if export_format is 'df', else None
         """
-        coins_df = asyncio.run(self.get_coins(coins))
-        historical_data_df = asyncio.run(self._get_timeseries(coins_df["coingecko_id"].tolist()))
+
+        if type(coins) is int:
+            coins_df = asyncio.run(self.get_coins(coins))
+            coins = coins_df["coingecko_id"].tolist()
+
+        elif type(coins) is list:
+            coins = coins
+
+        historical_data_df = asyncio.run(self._get_timeseries(coins))
 
         if export_format == 'df':
             return historical_data_df
