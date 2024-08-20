@@ -127,10 +127,13 @@ class CoinGecko:
         """Synchronous method to fetch and return timeseries data as a DataFrame."""
         return asyncio.run(self._async_get_timeseries(coingecko_ids))
 
-    def export_data(self, coins: Union[int, List[str]], export_format: str = 'df') -> pd.DataFrame:
+    def export_data(self, coins: Union[int, List[str], str], export_format: str = 'df') -> pd.DataFrame:
         """Main method to fetch and export CoinGecko data."""
         if isinstance(coins, int):
             coins_df = self.get_coins(coins)
+            coins = coins_df["coingecko_id"].tolist()
+        elif isinstance(coins, str):
+            coins_df = self.get_all_active_coins()
             coins = coins_df["coingecko_id"].tolist()
 
         historical_data_df = self.get_timeseries(coins)
@@ -159,6 +162,21 @@ class CoinGecko:
         market_cap_data['date'] = pd.to_datetime(market_cap_data['date'], unit='ms')
         
         return market_cap_data
+    
+    def get_all_active_coins(self) -> pd.DataFrame:
+        """Fetches the list of all active coins from the CoinGecko API and returns it as a DataFrame."""
+        url = "https://pro-api.coingecko.com/api/v3/coins/list?include_platform=false&status=active"
+
+        headers = {
+            "accept": "application/json",
+            "x-cg-pro-api-key": "CG-6rSA4HVyKdSVzEno5Sp7tJ2W"
+        }
+
+        r = requests.get(url, headers=headers).json()
+        df = pd.DataFrame(r)
+        df.rename(columns={"id": "coingecko_id"}, inplace=True)
+        return df
+
 
     def upload_to_s3(
         self,
