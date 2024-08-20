@@ -9,6 +9,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import boto3
 from io import BytesIO
+import requests
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -141,6 +142,23 @@ class CoinGecko:
             CoinGeckoDataProcessor.save_to_parquet(historical_data_df, f"data/historical_data_{today}.parquet")
         else:
             raise ValueError("Invalid export format. Choose 'df' or 'parquet'.")
+
+    def get_total_marketcap(self) -> pd.DataFrame:
+        """Fetches the total market cap data from the CoinGecko API and returns it as a DataFrame."""
+        url = f"{self.api.base_url}/global/market_cap_chart?days=max"
+        headers = {
+            "accept": "application/json",
+            "x-cg-pro-api-key": self.api.api_key
+        }
+        
+        response = requests.get(url, headers=headers)
+        data = response.json()
+
+        # Process the market cap data
+        market_cap_data = pd.DataFrame(data['market_cap'], columns=['date', 'market_cap'])
+        market_cap_data['date'] = pd.to_datetime(market_cap_data['date'], unit='ms')
+        
+        return market_cap_data
 
     def upload_to_s3(
         self,
