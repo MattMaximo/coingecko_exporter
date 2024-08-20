@@ -10,7 +10,7 @@ import pyarrow.parquet as pq
 import boto3
 from io import BytesIO
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message=s)')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
 class CoinGeckoAPI:
